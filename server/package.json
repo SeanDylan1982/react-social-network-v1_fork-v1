@@ -9,7 +9,8 @@
     "start:prod": "npm run build && node ./dist/src/index.js",
     "start_windows": "set NODE_ENV=production&&node /dist/src/index.js",
     "build": "npx tsc",
-    "postinstall": "npx tsc"
+    "postinstall": "npx tsc",
+    "seed": "ts-node src/seed/seed.ts"
   },
   "repository": {
     "type": "git",
@@ -39,6 +40,7 @@
     "multer-storage-cloudinary": "^4.0.0",
     "path": "^0.12.7",
     "react-redux": "^7.2.5",
+    "react-social-network": "file:",
     "sharp": "^0.31.1",
     "streamifier": "^0.1.1",
     "ts-node": "^10.4.0",

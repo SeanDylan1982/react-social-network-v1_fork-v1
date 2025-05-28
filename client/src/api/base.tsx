@@ -2,31 +2,35 @@ import { logoutUser } from "../redux/slices/userSlice";
 import { store } from "../redux/store";
 import axios, { AxiosRequestConfig } from "axios";
 export const client = axios.create({
-  baseURL: import.meta.env.VITE_API_URL,
+  baseURL: '/api',
   headers: {
-    "Access-Control-Allow-Origin": "*",
-    "Content-Type": "application/json",
-    mode: "cors",
+    "Content-Type": "application/json"
   },
 });
 
 export const AxiosAPI = axios.create({
+  baseURL: '/api',
   headers: {
-    "Access-Control-Allow-Origin": "*",
-    "Content-Type": "application/json",
-    mode: "cors",
+    "Content-Type": "application/json"
   },
 });
 
 AxiosAPI.interceptors.request.use(
   (config: AxiosRequestConfig) => {
-    const token = store.getState().user.currentUser.accessToken;
-    config.headers = {
-      Authorization: `Bearer ${token}`,
-    };
+    const state = store.getState();
+    const token = state.user?.currentUser?.accessToken;
+    
+    if (token) {
+      config.headers = {
+        ...config.headers,
+        Authorization: `Bearer ${token}`,
+      };
+    }
     return config;
   },
-  (error) => {}
+  (error) => {
+    return Promise.reject(error);
+  }
 );
 
 AxiosAPI.interceptors.response.use(

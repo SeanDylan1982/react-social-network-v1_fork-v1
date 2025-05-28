@@ -15,14 +15,9 @@ dotenv.config({
 });
 
 // define port
-const PORT = process.env.PORT || 6000;
+const PORT = process.env.PORT || 5000;
 
 const app: Express = express();
-// const whitelistDomains = [
-//   'https://react-social-network-101.netlify.app',
-//   'https://react-social-network-101.netlify.app/',
-// ];
-//@ts-ignore
 
 // secure cors options
 app.use(cors({
@@ -30,33 +25,39 @@ app.use(cors({
 }));
 
 app.use(helmet());
-//connect to db
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(compression());
-connectDb();
+app.use(morgan('dev'));
+
+// Routes
+app.use('/api/users', userRoutes);
+app.use('/api/posts', postRoutes);
+app.use('/api/comments', commentRoutes);
+
+app.get('/', (req: Request, res: Response) => {
+  return res.send("API is running...");
+});
 
 // configure cloudinary
 
 cloudinary.v2.config({
-  cloud_name: 'social-network-101',
-  api_key: '397828424674875',
-  api_secret: 'ZRMnO8CC7-SY-kUOXU9sjGRRNNc',
-});
-// initialize cors
-
-// Other Middlewares
-// Routes
-app.get('/', (req: Request, res: Response) => {
-  return res.send("Hello Worldssds");
-  
+  cloud_name: 'dmt1e9ecl',
+  api_key: '455724517679442',
+  api_secret: 'HWJnw7MdnvHWZAhfu6VCv6f3jaA',
 });
 
-app.use('/posts', postRoutes);
-app.use('/auth', userRoutes);
-app.use('/comment', commentRoutes);
+// Start server
+const startServer = async () => {
+  try {
+    await connectDb();
+    app.listen(PORT, () => {
+      console.log(`Server is running on port ${PORT}`);
+    });
+  } catch (error) {
+    console.error('Failed to start server:', error);
+    process.exit(1);
+  }
+};
 
-// initialize server
-app.listen(PORT, () => {
-  console.log(`Server is running in port ${PORT}`);
-});
+startServer();

@@ -7,42 +7,41 @@ import { AxiosAPI } from "./base";
 
 export async function fetchPosts() {
   try {
-    const response = await AxiosAPI.get(
-      `${import.meta.env.VITE_API_URL}posts`
-    );
-    const data = await response.data;
-    return data as IPost[];
+    console.log('Fetching posts...');
+    const response = await AxiosAPI.get('/posts');
+    console.log('Posts response:', response);
+    if (!response) {
+      return { data: [] };
+    }
+    return { data: response.data };
   } catch (err) {
-    return err;
+    console.error('Error fetching posts:', err);
+    return { data: [] };
   }
 }
 
-export async function addPost(data: IPost[]) {
-  return await AxiosAPI.post(`${import.meta.env.VITE_API_URL}posts`, data, {
-    headers: {
-      "Content-Type": "multipart/form-data",
-      "Access-Control-Allow-Origin": "*"
-    },
-  });
+export async function addPost(data: FormData) {
+  try {
+    const response = await AxiosAPI.post('/posts', data);
+    return response.data;
+  } catch (error) {
+    console.error('Error adding post:', error);
+    throw error;
+  }
 }
 
 export async function deletePost(id: string) {
   try {
-    const res = await AxiosAPI.delete(
-      `${import.meta.env.VITE_API_URL}posts/${id}`,
-      {}
-    );
+    const res = await AxiosAPI.delete(`/posts/${id}`);
     return res;
   } catch (err) {
-    return new Promise((resolve, reject) => {
-      Promise.reject(err);
-    });
+    return Promise.reject(err);
   }
 }
 
 export async function likePost(id: string) {
   try {
-    await AxiosAPI.patch(`${import.meta.env.VITE_API_URL}posts/like`, {
+    await AxiosAPI.patch(`/posts/like`, {
       id: id,
     });
   } catch (err) {
@@ -52,7 +51,7 @@ export async function likePost(id: string) {
 
 export async function unlikePost(id: string) {
   try {
-    await AxiosAPI.patch(`${import.meta.env.VITE_API_URL}posts/unlike`, {
+    await AxiosAPI.patch(`/posts/unlike`, {
       id: id,
     });
   } catch (err) {
@@ -62,11 +61,11 @@ export async function unlikePost(id: string) {
 
 export async function addComment(data: CommentsDataProps) {
   try {
-    await AxiosAPI.post(`${import.meta.env.VITE_API_URL}comment`, data);
+    const response = await AxiosAPI.post(`/comment`, data);
+    return response.data;
   } catch (err) {
-    return new Promise((resolve, reject) => {
-      reject(err);
-    });
+    console.error('Error adding comment:', err);
+    throw err;
   }
 }
 
@@ -77,27 +76,20 @@ export async function fetchComments({
 }) {
   try {
     const [_, id] = queryKey;
-    //
-    const res = await AxiosAPI.get(
-      `${import.meta.env.VITE_API_URL}comment/${id}`
-    );
+    const res = await AxiosAPI.get(`/comment/${id}`);
     return res.data;
   } catch (err) {
-    return new Promise((resolve, reject) => {
-      reject(err);
-    });
+    console.error('Error fetching comments:', err);
+    return [];
   }
 }
+
 export async function deleteComment(id: string) {
   try {
-    const res = await AxiosAPI.delete(
-      `${import.meta.env.VITE_API_URL}comment/${id}/delete`,
-      {}
-    );
-    return res;
+    const res = await AxiosAPI.delete(`/comment/${id}/delete`);
+    return res.data;
   } catch (err) {
-    return new Promise((resolve, reject) => {
-      Promise.reject(err);
-    });
+    console.error('Error deleting comment:', err);
+    throw err;
   }
 }

@@ -6,7 +6,7 @@ import { authGuard } from '../middlewares/authenticate';
 import { upload } from '../middlewares/upload';
 const router = express.Router();
 
-router.route('/').get(authGuard, getPublicPosts).post(authGuard, upload.single('image'), addPost);
+router.route('/').get(getPublicPosts).post(authGuard, upload.single('image'), addPost);
 router.get('/myposts', authGuard, getPrivatePosts);
 router.get('/publicposts', getPublicPosts);
 router.get("/post/:id", getPostById);

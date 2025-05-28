@@ -14,8 +14,18 @@ interface ISubmitForm {
 const AddPost = () => {
   const { register, reset, handleSubmit } = useForm();
   const [customErr, setCustomErr] = useState("");
-
-  const { mutate } = useMutation(addPost as any);
+  const { mutate } = useMutation(addPost, {
+    onSuccess: () => {
+      queryClient.invalidateQueries(["posts"]);
+      setSelectedImg("");
+      setFileName("");
+      reset();
+      setCustomErr("");
+    },
+    onError: (error: any) => {
+      setCustomErr(error?.response?.data?.message || "Error creating post");
+    }
+  });
 
   const [fileName, setFileName] = useState<Blob | File | string>("");
   const [selectedImg, setSelectedImg] = useState<string>("");
@@ -40,28 +50,26 @@ const AddPost = () => {
 
     } else {
       setCustomErr("File should be only image and not other file types");
-    }
-  }
-
-  function submitPost(data: ISubmitForm) {
-    // handle the click event
-    const formData: any = new FormData();
-    if (data.textarea === "") {
-      setCustomErr("Write some text or  upload an image  to create a post");
-    } else {
-      formData.append("text", data.textarea);
+    }  }
+  
+  const submitPost = (data: ISubmitForm) => {
+    if (data.textarea === "" && !fileName) {
+      setCustomErr("Please write some text or upload an image to create a post");
+      return;
+    }    const formData = new FormData();
+    formData.append("text", data.textarea);
+    if (fileName) {
       formData.append("image", fileName);
-      mutate(formData, {
-        onSuccess: (data) => {
-          console.log(data, 'DATA');
-
-          setSelectedImg("");
-
-          setFileName("");
-          reset();
-        },
-      });
     }
+    formData.append("visibility", "public"); // Default to public visibility
+    
+    console.log('Submitting post with data:', {
+      text: data.textarea,
+      hasImage: !!fileName,
+      visibility: "public"
+    });
+
+    mutate(formData);
   }
   return (
     <div className="w-full min-h-[100px] flex flex-col items-center justify-center  flex-wrap  bg-white rounded-md  gap-2 border border-neutral-200 shadow-md   ">

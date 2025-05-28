@@ -11,43 +11,39 @@ interface PostsListProps {
 }
 const Post = lazy(() => import("./Post" /* webpackChunkName: "Post" */));
 const PostsList = () => {
-  const [posts, setPosts] = useState<IPost[]>([]);
-  // @ts-ignore
-  // const prefetchPosts = async () => {
-  //   await queryClient.prefetchQuery("posts", fetchPosts);
-  // };
-
-  // useEffect(() => {
-  //   const prefetchData = async () => {
-  //     const data: PostsListProps["data"] = await queryClient.fetchQuery(
-  //       ["posts"],
-  //       fetchPosts
-  //     );
-  //     if (data) {
-  //       setPosts(data?.slice(0, 20));
-  //     }
-  //   };
-  //   prefetchData();
-  // }, []);
-  useQuery(["posts"], fetchPosts, {
-    onSuccess: (data: PostsListProps["data"]) => {
-      setPosts(data);
+  const { data: postsData, isLoading, error } = useQuery(["posts"], fetchPosts, {
+    onSuccess: (data) => {
+      console.log('Query succeeded with data:', data);
     },
-
     onError: (err) => {
-      alert("Error fetching posts");
+      console.error('Query failed with error:', err);
     }
-
   });
 
+  if (isLoading) {
+    return <SmallSpinner />;
+  }
+
+  if (error) {
+    console.error('Error in PostsList:', error);
+    return <div>Error loading posts</div>;
+  }  console.log('PostsData:', postsData);
+  const posts = postsData?.data || [];
+
   return (
-    <div className="flex items-center justify-center flex-wrap w-full flex-col ">
-
+    <div className="flex items-center justify-center flex-wrap w-full flex-col">
       <SuspenseWrapper>
-
-        {posts?.map((post: IPost) => (
-          <Post key={post._id} post={post} />
-        ))}
+        {Array.isArray(posts) ? (
+          posts.length > 0 ? (
+            posts.map((post: IPost) => (
+              <Post key={post._id} post={post} />
+            ))
+          ) : (
+            <div className="text-center p-4 text-gray-600">No posts found</div>
+          )
+        ) : (
+          <div className="text-center p-4 text-red-600">Error loading posts</div>
+        )}
       </SuspenseWrapper>
     </div>
   );

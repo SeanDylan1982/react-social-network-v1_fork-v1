@@ -13,24 +13,38 @@ import sharp from "sharp";
 let refreshTokens: Array<object | string> = [];
 // Login Route
 const loginUser = async (req: Request, res: Response, next: NextFunction) => {
-  try{
-  const { email, password } = req.body;
-  const user = await User.findOne({ email });
-  if (user && (await user.matchPassword(password))) {
-    const accessToken = generateAccessToken(user._id);
+  try {
+    const { email, password } = req.body;
+    
+    if (!email || !password) {
+      return res.status(400).json({ message: "Email and password are required" });
+    }
 
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(401).json({ message: "Invalid email or password" });
+    }
+
+    const isPasswordValid = await user.matchPassword(password);
+    if (!isPasswordValid) {
+      return res.status(401).json({ message: "Invalid email or password" });
+    }
+
+    const accessToken = generateAccessToken(user._id);
+    const refreshToken = generateRefreshToken(user._id);
+
+    // Send the response
     res.json({
       _id: user._id,
       username: user.username,
       email: user.email,
       avatar: user.avatar,
       accessToken,
-      isVerified:user.isVerified
+      isVerified: user.isVerified
     });
-  }}
-  catch(err){
-    res.status(404).json({message:"Invalid email or password"})
-
+  } catch (err) {
+    console.error('Login error:', err);
+    res.status(500).json({ message: "An error occurred during login" });
   }
 };
 
@@ -65,38 +79,66 @@ const registerUser = async (
   res: Response,
   next: NextFunction
 ) => {
-  try{
-  const { username, email, avatar, password, posts } = req.body;
-  const userExists = await User.findOne({ email });
-  if (userExists) {
-    res.status(404).json({ message: "User already exists" });
-  } else {
+  try {
+    const { username, email, password } = req.body;
+
+    // Input validation
+    if (!username || !email || !password) {
+      return res.status(400).json({ message: "All fields are required" });
+    }
+
+    // Email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ message: "Invalid email format" });
+    }
+
+    // Password strength validation
+    if (password.length < 8) {
+      return res.status(400).json({ message: "Password must be at least 8 characters long" });
+    }
+
+    // Check if user exists
+    const userExists = await User.findOne({ email });
+    if (userExists) {
+      return res.status(400).json({ message: "User already exists" });
+    }
+
+    // Create user
     const user = new User({
       username,
       email,
       password,
     });
-    if(req?.file) {
-      const result:any = await streamUpload(req);
-      user.avatar = result.secure_url;
+
+    // Handle avatar upload if present
+    if (req?.file) {
+      try {
+        const result: any = await streamUpload(req);
+        user.avatar = result.secure_url;
+      } catch (uploadError) {
+        console.error('Avatar upload error:', uploadError);
+        // Continue with default avatar if upload fails
+      }
     }
 
     const savedUser = await user.save();
     const accessToken = generateAccessToken(savedUser._id);
     const refreshToken = generateRefreshToken(savedUser._id);
 
-    res.json({
+    // Return user data and tokens
+    res.status(201).json({
       _id: savedUser._id,
       username: savedUser.username,
       email: savedUser.email,
       avatar: savedUser.avatar,
       accessToken,
+      isVerified: false // New users start as unverified
     });
+  } catch (err) {
+    console.error('Registration error:', err);
+    res.status(500).json({ message: "An error occurred during registration" });
   }
-}
-catch(err){
-  res.status(500).json({message:"Something went wrong"})
-}
 };
 
 

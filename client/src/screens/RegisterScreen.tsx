@@ -15,31 +15,85 @@ const RegisterScreen: React.FC = () => {
   const currentUser = useAuth();
   const navigate = useNavigate();
   const [avatar, setAvatar] = useState<string | Blob>("");
-  const dispatch = useDispatch();
-
-  const userMutation = useMutation(registerUser, {
-    onSuccess: ({ data }) => {
-      localStorage.setItem("userDetails", JSON.stringify(data));
-      dispatch(addNewUser(data as IUser));
+  const dispatch = useDispatch();  const userMutation = useMutation(registerUser, {
+    onSuccess: (response: any) => {
+      console.log('Registration successful:', response);
+      // For debugging - log the entire response
+      console.log('Full registration response:', JSON.stringify(response, null, 2));
+      
+      if (response) {
+        // If response is the user data directly
+        const userData = response.data || response;
+        if (userData?._id) {  // Check if we have valid user data
+          localStorage.setItem("userDetails", JSON.stringify(userData));
+          dispatch(addNewUser(userData));
+          navigate("/");
+          return;
+        }
+      }
+      console.error('Invalid user data in response:', response);
+      alert("Registration completed but received invalid user data. Please try logging in.");
     },
+    onError: (error: any) => {
+      console.error('Registration error details:', {
+        message: error?.message,
+        response: error?.response,
+        data: error?.response?.data
+      });
+      if (error?.response?.data?.message) {
+        alert(error.response.data.message);
+      } else {
+        alert("Registration failed. Please check your information and try again.");
+      }
+    }
   });
 
   useEffect(() => {
-    currentUser !== null && navigate("/");
-  }, [currentUser, navigate]);
+    if (currentUser) {
+      console.log('User already logged in, redirecting...');
+      navigate("/");
+    }
+  }, [currentUser, navigate]);  const handleRegister = async (data: AuthProps) => {
+    try {
+      // Clear any previous errors
+      // setCustomErr("");
 
-  const handleRegister = (data: AuthProps) => {
-    if (data.username === "" || data.email === "" || data.password === "") {
-      alert("Please fill in required fields");
-    } else {
-      const formUser: FormData = new FormData();
-      formUser.append("username", data.username as string);
-      formUser.append("email", data.email);
-      if (avatar) {
-        formUser.append("avatar", avatar);
+      // Validate required fields
+      if (!data.username || !data.email || !data.password) {
+        // setCustomErr("All fields are required");
+        return;
       }
+
+      // Create FormData object for registration
+      const formUser = new FormData();
+      formUser.append("username", data.username);
+      formUser.append("email", data.email);
       formUser.append("password", data.password);
-      userMutation.mutate(formUser);
+      
+      // Add avatar if one was selected
+      if (avatar) {
+        formUser.append("avatar", avatar, "profile.jpg");
+      }
+
+      // Submit registration data
+      userMutation.mutate(formUser, {
+        onSuccess: (responseData) => {
+          if (responseData.accessToken) {
+            localStorage.setItem('accessToken', responseData.accessToken);
+            startTransition(() => {
+              dispatch(addNewUser(responseData as IUser));
+            });
+          }
+        },
+        onError: (error: any) => {
+          console.error('Registration error:', error);
+          const errorMessage = error?.response?.data?.message || "Registration failed. Please try again.";
+          // setCustomErr(errorMessage);
+        }
+      });
+    } catch (error) {
+      console.error('Error in handleRegister:', error);
+      // setCustomErr("Error preparing registration data. Please try again.");
     }
   };
 

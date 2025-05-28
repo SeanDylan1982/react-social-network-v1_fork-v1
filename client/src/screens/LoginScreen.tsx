@@ -26,42 +26,47 @@ const LoginScreen = () => {
   const loginMutation = useMutation({
     mutationFn: loginUser,
   });
-
   const handleLogin = (data: AuthProps) => {
-    if (data.email !== "" || data.password !== "") {
-      loginMutation.mutate(
-        {
-          email: data.email,
-          password: data.password,
-        },
-        {
-          onSuccess: (data) => {
-            startTransition(() => {
-              dispatch(addNewUser(data as IUser));
-              setCustomErr("");
-            });
-          },
+    // Clear any previous errors
+    setCustomErr("");
 
-          onError: (err) => {
-
-            console.log(err, 'Error');
-
-            setCustomErr("Incorrect email or password");
-          },
-        }
-      );
+    if (!data.email || !data.password) {
+      setCustomErr("Please fill in all fields");
+      return;
     }
-  };
 
+    loginMutation.mutate(
+      {
+        email: data.email,
+        password: data.password,
+      },
+      {
+        onSuccess: (responseData) => {
+          startTransition(() => {
+            // Store the token in localStorage
+            if (responseData.accessToken) {
+              localStorage.setItem('accessToken', responseData.accessToken);
+            }
+            dispatch(addNewUser(responseData as IUser));
+          });
+        },
+        onError: (error: any) => {
+          console.error('Login error:', error);
+          const errorMessage = error?.response?.data?.message || "An error occurred during login";
+          setCustomErr(errorMessage);
+        },
+      }
+    );
+  }
   return currentUser === null ? (
     <div className="w-full flex flex-col  flex-wrap items-center justify-center min-h-[80vh] ">
-
+  
       <form
         onSubmit={handleSubmit(handleLogin as any)}
         className="flex  w-[100%] md:w-[300px]  bg-white items-center justify-center  flex-col flex-wrap shadow-md rounded min-h-[300px] px-4 py-10 mb-4"
       >
         <h1 className="text-xl py-2 font-bold font-inter">Login</h1>
-
+  
         <div className="mb-6 w-full flex flex-wrap flex-col items-start justify-center">
           <label className="block text-gray-700 text-sm font-bold mb-2">
             Email
@@ -142,6 +147,6 @@ const LoginScreen = () => {
   ) : (
     <Navigate to="/" state={{ from: location }} replace />
   );
-};
+}
 
 export default LoginScreen;

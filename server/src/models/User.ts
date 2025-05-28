@@ -50,15 +50,33 @@ const UserSchema: Schema = new Schema(
 );
 
 UserSchema.methods.matchPassword = async function (enteredPassword: string) {
-  return await bcrypt.compare(enteredPassword, this.password);
+  try {
+    if (!this.password) {
+      return false;
+    }
+    return await bcrypt.compare(enteredPassword, this.password);
+  } catch (error) {
+    console.error('Password comparison error:', error);
+    return false;
+  }
 };
 
 UserSchema.pre('save', async function (next) {
-  if (!this.isModified('password')) {
+  try {
+    // Only hash the password if it has been modified (or is new)
+    if (!this.isModified('password')) {
+      return next();
+    }
+
+    // Generate a salt with a cost factor of 10
+    const salt = await bcrypt.genSalt(10);
+    // Hash the password along with the new salt
+    this.password = await bcrypt.hash(this.password, salt);
     next();
+  } catch (error) {
+    console.error('Password hashing error:', error);
+    next(error);
   }
-  const salt = await bcrypt.genSalt(10);
-  this.password = await bcrypt.hash(this.password, salt);
 });
 
 const User = model<IUser>('User', UserSchema);

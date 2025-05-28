@@ -12,9 +12,9 @@ const getPublicPosts = async (req: Request, res: Response) => {
     createdAt: -1,
   }).limit(20);
   if (posts.length > 0) {
-    res.json(posts);
+    res.json({ data: posts });
   } else {
-    res.status(404).json({ message: 'No posts found' });
+    res.status(404).json({ message: 'No posts found', data: [] });
   }
 };
 // display likes as array of users 
@@ -120,15 +120,22 @@ const unlikePost = async (req: Request, res: Response) => {
 };
 //A Request which can  create posts
 const addPost = async (req: Request, res: Response) => {
-  const post: IPost = new Post({
-    user: req.user._id,
-    username: req.user.username,
-    avatar: req.user.avatar,
-    text: req.body.text,
-    createdAt: Date.now(),
-    visibility: req.body.visibility,
-    isVerified: req.user.isVerified,
-  });
+  try {
+    console.log('Received post request:', {
+      body: req.body,
+      user: req.user,
+      file: req.file
+    });
+
+    const post: IPost = new Post({
+      user: req.user._id,
+      username: req.user.username,
+      avatar: req.user.avatar,
+      text: req.body.text,
+      createdAt: Date.now(),
+      visibility: req.body.visibility || 'public',
+      isVerified: req.user.isVerified,
+    });
   if (req.file) {
     const result: any = await streamUpload(req);
     post.image = result.secure_url;
@@ -141,11 +148,15 @@ const addPost = async (req: Request, res: Response) => {
   if (userById) {
     const pushedPost = await userById.save();
   }
-
   if (newPost) {
     res.json(newPost);
   } else {
     res.status(404).send('Error while creating post');
   }
+  } catch (error) {
+    console.error('Error creating post:', error);
+    res.status(500).send('Server error while creating post');
+  }
 };
+  
 export { addPost, getPublicPosts, unlikePost,getLikes, likePost,getPostById, getPrivatePosts, deletePost };
