@@ -9,13 +9,14 @@ import { useMutation } from "@tanstack/react-query";
 import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { AuthProps, IUser } from "../types/UserInterfaces";
+import startTransition from "react";
 
 const RegisterScreen: React.FC = () => {
   const { register, handleSubmit } = useForm();
   const currentUser = useAuth();
   const navigate = useNavigate();
   const [avatar, setAvatar] = useState<string | Blob>("");
-  const dispatch = useDispatch();  const userMutation = useMutation(registerUser, {
+  const dispatch = useDispatch(); const userMutation = useMutation(registerUser, {
     onSuccess: (response: any) => {
       console.log('Registration successful:', response);
       // For debugging - log the entire response

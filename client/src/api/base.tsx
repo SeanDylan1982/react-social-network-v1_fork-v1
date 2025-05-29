@@ -1,6 +1,7 @@
 import { logoutUser } from "../redux/slices/userSlice";
 import { store } from "../redux/store";
 import axios, { AxiosRequestConfig } from "axios";
+
 export const client = axios.create({
   baseURL: '/api',
   headers: {
